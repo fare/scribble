@@ -1,0 +1,10 @@
+#+xcvb
+(module
+ (:fullname
+  "scribble"
+  :depends-on
+  ("package" "scribble")
+  :build-depends-on
+  ((:asdf "meta"))
+  :supersedes-asdf
+  ("scribble")))

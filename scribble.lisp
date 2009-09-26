@@ -1,3 +1,5 @@
+#+xcvb (module (:depends-on ("package")))
+
 #|" -*- Mode: Lisp ; Base: 10 ; Syntax: ANSI-Common-Lisp -*-
 Scribble: SCRibe-like reader extension for Common Lisp
 Copyright (c) 2002-2006 by Fare Rideau < fare at tunes dot org >

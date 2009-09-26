@@ -1,3 +1,5 @@
+#+xcvb (module (:depends-on nil))
+
 (cl:defpackage #:scribble
   (:use #:meta #:common-lisp)
   (:export #:enable-scribble-syntax #:disable-scribble-syntax

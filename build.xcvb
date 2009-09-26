@@ -5,6 +5,6 @@
   :depends-on
   ("package" "scribble")
   :build-depends-on
-  ((:asdf "meta"))
+  ("meta")
   :supersedes-asdf
   ("scribble")))

@@ -13,6 +13,7 @@ You may at your leisure use the LLGPL instead:
 DEPENDENCY:
 This package depends on Meta by Jochen Schmidt, version 0.1.1 or later.
 	http://www.cliki.net/Meta
+Now also: closer-mop meta fare-utils fare-matcher
 
 USAGE:
 You can enable behaviour for the macro-character #\[ with
@@ -23,6 +24,14 @@ Alternatively, you can enable behaviour for the character #\[
 under the dispatching macro-character #\# using
 	(scribble:enable-sub-scribble-syntax)
 	(scribble:disable-sub-scribble-syntax)
+
+New! You can instead enable Racket-like Scribble syntax for the macro-character #\@ with
+	(scribble:enable-scribble-at-syntax)
+and disable it with
+	(scribble:disable-scribble-at-syntax)
+For details, see:
+	http://docs.racket-lang.org/scribble/reader.html
+
 
 BASIC SYNTAX:
 The syntax of text within brackets is Scribe-like:
@@ -218,5 +227,5 @@ http://barzilay.org/research.html
 http://barzilay.org/misc/scribble-reader.pdf
 http://docs.racket-lang.org/scribble/reader.html
 
-See also Daniel Herring's partial implementation:
+For historical information, see also Daniel Herring's partial implementation:
 http://lists.libcl.com/pipermail/libcl-devel-libcl.com/2010-January/000094.html

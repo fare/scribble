@@ -67,3 +67,196 @@ Faré λ 自由 foo
 
   (delete-file *u*)
   t)
+
+(deftest test-scribble-at ()
+  ;; Tests taken from http://docs.racket-lang.org/scribble/reader.html
+  (macrolet ((a (x y)
+               `(is (equal (p ,x)
+                           ',(subst scribble::*lf* '*lf* y))))
+             (a* (&rest r)
+               `(flet ((p (x)
+                         (let ((*readtable* scribble::*scribble-readtable*))
+                           (read-from-string (strcat "      " x)))))
+                  ,@(loop :for (x y) :on r :by #'cddr :collect `(a ,x ,y)))))
+    (a*
+     "@foo{blah blah blah}" (foo "blah blah blah")
+     "@foo{blah \"blah\" (`blah'?)}" (foo "blah \"blah\" (`blah'?)")
+     "@foo[1 2]{3 4}" (foo 1 2 "3 4")
+     "@foo[1 2 3 4]" (foo 1 2 3 4)
+     "@foo[:width 2]{blah blah}" (foo :width 2 "blah blah")
+     "@foo{blah blah
+           yada yada}" (foo "blah blah" *lf* "yada yada")
+     "@foo{
+        blah blah
+        yada yada
+     }" (foo "blah blah" *lf* "yada yada")
+     "@foo{bar @baz{3}
+           blah}" (foo "bar " (baz "3") *lf* "blah")
+     "@foo{@b{@u[3] @u{4}}
+           blah}" (foo (b (u 3) " " (u "4")) *lf* "blah")
+     "@C{while (*(p++))
+           *p = '\\n';}" (C "while (*(p++))" *lf* "  " "*p = '\\n';")
+     "@{blah blah}" ("blah blah")
+     "@{blah @[3]}" ("blah " (3))
+     "'@{foo
+         bar
+         baz}" '("foo" *lf* "bar" *lf* "baz")
+     "@foo" foo
+     "@{blah @foo blah}" ("blah " foo " blah")
+     "@{blah @:foo blah}" ("blah " :foo " blah")
+     "@{blah @|foo|: blah}" ("blah " foo ": blah")
+     "@foo{(+ 1 2) -> @(+ 1 2)!}" (foo "(+ 1 2) -> " (+ 1 2) "!")
+     "@foo{A @\"string\" escape}" (foo "A string escape")
+     "@foo{eli@\"@\"barzilay.org}" (foo "eli@barzilay.org")
+     "@foo{A @\"{\" begins a block}" (foo "A { begins a block")
+     "@C{while (*(p++)) {
+           *p = '\\n';
+         }}" (C "while (*(p++)) {" *lf* "  " "*p = '\\n';" *lf* "}")
+     "@foo|{bar}@{baz}|" (foo "bar}@{baz")
+     "@foo|{bar |@x{X} baz}|" (foo "bar " (x "X") " baz")
+     "@foo|{bar |@x|{@}| baz}|" (foo "bar " (x "@") " baz")
+     "@foo|--{bar}@|{baz}--|" (foo "bar}@|{baz")
+     "@foo|<<{bar}@|{baz}>>|" (foo "bar}@|{baz")
+     "(define \\@email \"foo@bar.com\")" (define \@email "foo@bar.com")
+     ;;"(define |@atchar| #\\@)" (define \@atchar #\@)
+     "@foo{bar @baz[2 3] {4 5}}" (foo "bar " (baz 2 3) " {4 5}")
+     ;;"@`',@foo{blah}" `',@(foo "blah")
+     ;;"@#`#'#,@foo{blah}"  #`#'#,@(foo "blah")
+     "@(lambda (x) x){blah}" ((lambda (x) x) "blah")
+     ;;"@`(unquote foo){blah}" `(,foo  "blah")
+     "@{foo bar
+        baz}" ("foo bar" *lf* "baz")
+     "@'{foo bar
+         baz}" '("foo bar" *lf* "baz")
+     "@foo{bar @; comment
+           baz@;
+           blah}" (foo "bar bazblah")
+     "@foo{x @y z}" (foo "x " y " z")
+     "@foo{x @(* y 2) z}" (foo "x " (* y 2) " z")
+     "@{@foo bar}" (foo " bar")
+     "@@foo{bar}{baz}" ((foo "bar") "baz")
+     "@foo[1 (* 2 3)]{bar}" (foo 1 (* 2 3) "bar")
+     "@foo[@bar{...}]{blah}" (foo (bar "...") "blah")
+     "@foo[bar]" (foo bar)
+     "@foo{bar @f[x] baz}" (foo "bar " (f x) " baz")
+     "@foo[]{bar}" (foo "bar")
+     "@foo[]" (foo)
+     "@foo" foo
+     "@foo{}" (foo)
+     "@foo[:style 'big]{bar}" (foo :style 'big "bar") ; #:style in racket
+     "@foo{f{o}o}" (foo "f{o}o")
+     "@foo{{{}}{}}" (foo "{{}}{}")
+     "@foo{bar}" (foo "bar")
+     "@foo{ bar }" (foo " bar ")
+     "@foo[1]{ bar }" (foo 1 " bar ")
+     "@foo{a @bar{b} c}" (foo "a " (bar "b") " c")
+     "@foo{a @bar c}" (foo "a " bar " c")
+     "@foo{a @(bar 2) c}" (foo "a " (bar 2) " c")
+     "@foo{A @\"}\" marks the end}" (foo "A } marks the end")
+     "@foo{The prefix: @\"@\".}" (foo "The prefix: @.")
+     "@foo{@\"@x{y}\" --> (x \"y\")}" (foo "@x{y} --> (x \"y\")")
+     "@foo|{...}|" (foo "...")
+     "@foo|{\"}\" follows \"{\"}|" (foo "\"}\" follows \"{\"")
+     "@foo|{Nesting |{is}| ok}|" (foo "Nesting |{is}| ok")
+     "@foo|{Maze
+            |@bar{is}
+            Life!}|" (foo "Maze" *lf*
+                          (bar "is") *lf*
+                          "Life!")
+     "@t|{In |@i|{sub|@\"@\"s}| too}|" (t "In " (i "sub@s") " too")
+     "@foo|<<<{@x{foo} |@{bar}|.}>>>|" (foo "@x{foo} |@{bar}|.")
+     "@foo|!!{X |!!@b{Y}...}!!|" (foo "X " (b "Y") "...")
+     "@foo{foo@bar.}" (foo "foo" bar.)
+     "@foo{foo@|bar|.}" (foo "foo" bar ".")
+     "@foo{foo@3.0}" (foo "foo" 3.0) ;; orig had 3. 3.0
+     "@foo{foo@|3|.0}" (foo "foo" 3 ".0") ;; orign had no 0
+     "@foo{foo@|(f 1)|{bar}}" (foo "foo" (f 1) "{bar}")
+     "@foo{foo@|bar|[1]{baz}}" (foo "foo" bar "[1]{baz}")
+     "@foo{x@\"y\"z}" (foo "xyz")
+     "@foo{x@|\"y\"|z}" (foo "x" "y" "z")
+     "@foo{x@|1 (+ 2 3) 4|y}" (foo "x" 1 (+ 2 3) 4 "y")
+     "@foo{x@|*
+              *|y}" (foo "x" *
+          * "y")
+     "@foo{Alice@||Bob@|
+           |Carol}" (foo "Alice" "Bob" "Carol")
+     "@|{blah}|" ("blah")
+     "@|{blah |@foo bleh}|" ("blah " foo " bleh")
+     "@foo{First line@;{there is still a
+                        newline here;}
+           Second line}" (foo "First line" *lf* "Second line")
+     "@foo{A long @;
+           single-@;
+           string arg.}" (foo "A long single-string arg.")
+     "@foo{bar}" (foo "bar")
+     "@foo{ bar }" (foo " bar ")
+     "@foo{ bar
+           baz }" (foo " bar" *lf* "baz ")
+     "@foo{bar
+      }" (foo "bar")
+     "@foo{
+      bar
+      }" (foo "bar")
+     "@foo{
+
+      bar
+
+      }" (foo *lf* "bar" *lf*)
+      "@foo{
+      bar
+
+      baz
+      }" (foo "bar" *lf* *lf* "baz")
+     "@foo{
+      }" (foo *lf*)
+     "@foo{
+
+      }" (foo *lf* *lf*)
+     "@foo{ bar
+      baz }" (foo " bar" *lf* "baz ")
+     "@foo{
+        bar
+        baz
+        blah
+      }" (foo "bar" *lf* "baz" *lf* "blah")
+     "@foo{
+      begin
+        x++;
+      end}" (foo "begin" *lf* "  " "x++;" *lf* "end")
+     "@foo{
+         a
+        b
+       c}" (foo "  " "a" *lf* " " "b" *lf* "c")
+     "@foo{bar
+             baz
+           bbb}" (foo "bar" *lf* "  ""baz" *lf* "bbb")
+     "@foo{ bar
+              baz
+            bbb}" (foo " bar" *lf* "   " "baz" *lf* " " "bbb")
+     "@foo{bar
+         baz
+         bbb}" (foo "bar" *lf* "baz" *lf* "bbb")
+     "@foo{ bar
+           baz
+           bbb}" (foo " bar" *lf* "baz" *lf* "bbb")
+     "@foo{ bar
+         baz
+           bbb}" (foo " bar" *lf* "baz" *lf* "  " "bbb")
+     "@text{Some @b{bold
+                    text}, and
+            more text.}" (text "Some " (b "bold" *lf* "text")", and" *lf* "more text.")
+#| ;;; properly render this?
+;;; a formatter will need to apply the 2-space indentation to the rendering of the bold body.
+@code{
+  begin
+    i = 1, r = 1
+    @bold{while i < n do
+            r *= i++
+          done}
+  end
+}
+|#
+     "@foo{
+        @|| bar @||
+        @|| baz}" (foo " bar " *lf* " baz")
+)))

@@ -3,8 +3,8 @@
  (:fullname
   "scribble"
   :depends-on
-  ("package" "scribble")
+  ("package" "scribble-scribe" "scribble")
   :build-depends-on
-  ("meta")
+  ("meta" "fare-utils" "fare-matcher")
   :supersedes-asdf
   ("scribble")))

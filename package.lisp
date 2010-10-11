@@ -1,7 +1,7 @@
 #+xcvb (module (:depends-on nil))
 
 (cl:defpackage #:scribble
-  (:use #:common-lisp #:ll-omega #:meta :fare-utils :fare-quasiquote)
+  (:use #:common-lisp #|#:ll-omega|# #:meta :fare-utils :fare-quasiquote)
   #+(or clisp sbcl ccl)
   (:import-from #+clisp :gray #+sbcl :sb-gray #+ccl :ccl
                 :stream-line-column)

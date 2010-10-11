@@ -117,7 +117,7 @@
 
 (defun ascii-char-p (x)
   (and (typep x 'base-char)
-       (<= 127 (char-code x))))
+       (<= (char-code x) 127)))
 
 (defun expected-char-p (c expectation)
   (check-type c (or null character))
@@ -130,28 +130,58 @@
 (defvar *lf* (string #\newline))
 
 (memo:define-memo-function n-spaces (n)
-  (make-string n :initial-element #\space :element-type 'base-character))
+  (make-string n :initial-element #\space :element-type 'base-char))
 
 (defun expect-char (i &optional expectation)
   (let ((c (peek-char nil i nil nil t)))
     (and (expected-char-p c expectation) (read-char i))))
 
+(defun expect-string (i s)
+  (loop :for c :across s :for l :from 0 :do
+    (unless (expect-char i c)
+      (return (values nil (subseq s l))))
+    :finally (return (values t l))))
+
+(defun skip-whitespace-return-column (i &optional (col 0))
+  (loop :for c = (expect-char i #.(format nil " ~c" #\tab))
+    :while c :do
+    (ecase c
+      ((#\space) (incf col))
+      ((#\tab) (setf col (to-next-tab col))))
+    :finally (return col)))
+
+(defun trim-ending-spaces (s)
+  (let ((p (position-if #'(lambda (c) (not (member c '(#\space #\tab)))) s :from-end t)))
+    (if p (subseq s 0 (1+ p)) nil)))
+
+(defun read-to-char (c &optional (i *standard-input*))
+  (with-output-to-string (o)
+    (loop :for char = (expect-char i)
+      :until (eql c char)
+      :do (write-char char o))))
+
 (defun parse-at-syntax (i)
   ;; Parse an @ expression.
-  ;; returns multiple values: the parsed expression, and
-  ;; some flags to be used by recursive @ calls.
   (with-nesting ()
     (let* (;;(i (make-instance 'ωs :stream stream)) ; buffered input
            (o (make-string-output-stream)) ; buffered output of "current stuff"
            (cmdonly nil)
+           (col 0)
+           (line ())
+           (lines ())
            (mrof '()))) ; current form (reversed)
     (labels
-        ((?@ () ; expect a @ expression
-           (unless (expect-char i #\@)
-             (error "Expected #\@"))
-           (?@1))
-         (?@1 () ; what to do after a @
-           (?punctuation))
+        ((?@1 () ; what to do after a @
+           (cond
+             ((expect-char i #\;)
+              (?at-comment))
+             (t
+              (?punctuation))))
+         (?at-comment ()
+           (cond
+             ((expect-char i #\{) (?{text}))
+             (t (read-line i)))
+           (read-preserving-whitespace i t nil nil))
          (?punctuation ()
            (let ((char (expect-char i "'`,")))
              (ecase char
@@ -176,13 +206,39 @@
          (?comma ()
            (call-with-unquote-reader #'?punctuation))
          (?cmd ()
-           (let ((char (expect-char i "[{|")))
-             (if char
-                 (?datatext char)
-                 (?cmd1))))
+           (let ((char (expect-char i "|[{")))
+             (case char
+               ((#\|)
+                (maybe-alttext #'at-pipe))
+               ((#\[ #\{)
+                (?datatext char))
+               (t
+                (?cmd1)))))
+         (maybe-alttext (cont)
+           (unread-char #\| i)
+           (let ((k (?newkey)))
+             (cond
+               (k
+                (setf cmdonly nil)
+                (?{alttext} k))
+               (t
+                (funcall cont)))))
+         (at-pipe ()
+           (read-char i)
+           (let ((r (read-to-char #\| i)))
+             (multiple-value-bind (s #|n|#) (read-from-string r)
+               #|(unless (symbolp s)
+               (error "Expected a symbol, got ~S" r))
+               (unless (= n (length r))
+               (error "Unexpected characters in ~S" r))|#
+               (setf cmdonly t)
+               (form! s)
+               (?end))))
          (?cmd1 ()
            (setf cmdonly t)
-           (form! (read i))
+           (form! (read-preserving-whitespace i t nil nil))
+           (?cmd2))
+         (?cmd2 ()
            (let ((char (expect-char i "[{|")))
              (if char
                  (?datatext char)
@@ -203,14 +259,7 @@
               (setf cmdonly nil)
               (?{text}))
              ((expect-char i #\|)
-              (unread-char #\| i)
-              (let ((k (?newkey)))
-                (cond
-                  (k
-                   (setf cmdonly nil)
-                   (?{alttext} k))
-                  (t
-                   (?end)))))
+              (maybe-alttext #'?end))
              (t (?end))))
          (?newkey ()
            (loop
@@ -221,39 +270,142 @@
              :collect c :into l
              :finally (cond
                         ((eql c #\{) (return (coerce l 'base-string)))
-                        (t (file-position i p) nil))))
+                        (t (file-position i p) (return nil)))))
          (char! (c)
            (write-char c o))
          (flush! ()
-           (let ((s (get-output-stream-string o)))
+           (let* ((s (get-output-stream-string o)))
              (when (plusp (length s))
-               (form! s))))
-         (?{text} ()
-           (loop :with brace-level = 1
-             ;; :with initial-col = (stream-line-column-harder i)
-             :for c = (expect-char i) :do
+               (push s line))))
+         (eol! (eol)
+           (let* ((s (get-output-stream-string o))
+                  (s (if eol (trim-ending-spaces s) s)))
+             (when (plusp (length s))
+               (push s line))
+             (push (cons col (reverse line)) lines))
+           (when eol
+             (setf col (skip-whitespace-return-column i 0)
+                   line ()))
+           t)
+         (?{text} (&aux (brace-level 1))
+           (setf col (stream-line-column-harder i)
+                 line ())
+           (loop :for c = (expect-char i) :do
              (case c
+               ((#\return)
+                (expect-char i #\newline)
+                (eol! t))
+               ((#\newline)
+                (eol! t))
                ((#\{)
                 (incf brace-level)
                 (char! c))
                ((#\@)
-                (NIY))
+                (?inside-at))
                ((#\})
                 (decf brace-level)
-                (when (zerop brace-level)
-                  (flush!)
-                  (return (?end))))
+                (cond
+                  ((zerop brace-level)
+                   (eol! nil)
+                   (flush-text!)
+                   (return (?end)))
+                  (t
+                   (char! c))))
                (otherwise
-                (NIY)))))
+                (char! c)))))
+         (?inside-at ()
+           (let ((c (expect-char i ";\"|")))
+             (case c
+               ((#\;)
+                (cond
+                  ((expect-char i #\{)
+                   (let ((m mrof) (l line) (ls lines) (c col) (co cmdonly) (oo o))
+                     (setf o (make-string-output-stream))
+                     (?{text})
+                     (setf mrof m line l lines ls col c cmdonly co o oo)))
+                  (t
+                   (read-line i)
+                   (skip-whitespace-return-column i))))
+               ((#\")
+                (unread-char #\" i)
+                (write-string (read-preserving-whitespace i t nil nil) o))
+               ((#\|)
+                (flush!)
+                (let ((r (read-to-char #\| i)))
+                  (with-input-from-string (s r)
+                    (loop :for x = (read-preserving-whitespace s nil s nil)
+                      :until (eq x s) :do (push x line)))))
+               (otherwise
+                (flush!)
+                (push (parse-at-syntax i) line)))))
+         (flush-text! ()
+           (let* ((mincol (loop :for (col . strings) :in lines
+                            :when strings
+                            :minimize col))
+                  (text (loop :for (col . strings) :in (reverse lines)
+                          :for first = t :then nil
+                          :append
+                          `(,@(when (and strings (> col mincol) (not first))
+                                    (list (n-spaces (- col mincol))))
+                              ,@strings ,*lf*))))
+             (when (eq *lf* (first text))
+               (pop text))
+             (let ((e (every (lambda (x) (eq x *lf*)) text))
+                   (r (reverse text)))
+               (unless e
+                 (loop :repeat 2 :when (eq *lf* (first r)) :do (pop r)))
+               (setf mrof (append r mrof))))
+           t)
          (?{alttext} (key)
-           (let ((keylen (length key))
+           (let ((brace-level 1)
                  (rkey (mirror-string key)))
-             (NIY keylen rkey)))
+             (setf col (stream-line-column-harder i)
+                   line ())
+             (loop :for c = (expect-char i) :do
+               (case c
+                 ((#\return)
+                  (expect-char i #\newline)
+                  (eol! t))
+                 ((#\newline)
+                  (eol! t))
+                 (#\|
+                  (let* ((p (file-position i))
+                         (c (and (expect-string i key) (expect-char i "@{"))))
+                    (case c
+                      ((#\{)
+                       (incf brace-level)
+                       (char! #\|)
+                       (map () #'char! key)
+                       (char! c))
+                      ((#\@)
+                       (?inside-at))
+                      (otherwise
+                       (file-position i p)
+                       (char! #\|)))))
+               ((#\})
+                (let* ((p (file-position i)))
+                  (cond
+                    ((and (expect-string i rkey) (expect-char i #\|))
+                     (decf brace-level)
+                     (cond
+                       ((zerop brace-level)
+                        (eol! nil)
+                        (flush-text!)
+                        (return (?end)))
+                       (t
+                        (char! #\})
+                        (map () #'char! rkey)
+                        (char! #\|))))
+                    (t
+                     (file-position i p)
+                     (char! #\})))))
+               (otherwise
+                (char! c))))))
          (?end ()
            (if (and cmdonly (length=n-p mrof 1))
                (car mrof)
                (reverse mrof))))
-      (?@))))
+      (?@1))))
 
 (defun do-enable-scribble-at-syntax (&optional (readtable *readtable*))
   (enable-quasiquote :readtable readtable)
@@ -282,16 +434,21 @@
            (declare (ignore char))
            (parse-at-syntax stream))
    nil readtable)
+  ;;(do-enable-scribble-syntax readtable) ; backward compatibility with former scribble?
+  (set-macro-character
+   #\| #'(lambda (stream char)
+           (declare (ignore stream char))
+           (error "| not allowed when at syntax enabled"))
+   nil readtable)
   t)
 
-(defvar *saved-readtable* *readtable*)
-
-(defparameter *scribble-readtable*
-  (let ((r (copy-readtable *saved-readtable*)))
-    (do-enable-scribble-at-syntax r)
-    r))
+(defvar *scribble-at-readtable* nil)
+(defun enable-scribble-at-syntax (&optional (readtable *readtable*))
+  (setf *scribble-at-readtable* (push-readtable readtable))
+  (do-enable-scribble-at-syntax *scribble-at-readtable*)
+  *scribble-at-readtable*)
 
 (defun parse-at-string (x)
   (with-input-from-string (i x)
-    (let ((*readtable* *scribble-readtable*))
+    (let ((*readtable* *scribble-at-readtable*))
       (scribble::parse-at-syntax i))))

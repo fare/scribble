@@ -2,7 +2,8 @@
 (in-package :keyword)
 
 (asdf:defsystem scribble
-  depends-on (:meta)
+  depends-on (closer-mop meta fare-utils fare-matcher)
   serial t
-  components ((file "package")
+  components (;;(file "ll")
+              (file "package")
 	      (file "scribble")))

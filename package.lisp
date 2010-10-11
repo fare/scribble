@@ -1,7 +1,10 @@
 #+xcvb (module (:depends-on nil))
 
 (cl:defpackage #:scribble
-  (:use #:meta #:common-lisp)
+  (:use #:common-lisp #:ll-omega #:meta :fare-utils :fare-quasiquote)
+  #+(or clisp sbcl ccl)
+  (:import-from #+clisp :gray #+sbcl :sb-gray #+ccl :ccl
+                :stream-line-column)
   (:export #:enable-scribble-syntax #:disable-scribble-syntax
 	   #:reenable-scribble-syntax
 	   #:enable-sub-scribble-syntax #:disable-sub-scribble-syntax
@@ -17,4 +20,10 @@
 	   #:configure-scribble-for-lml2
 	   #:configure-scribble-for-tml
 	   #:configure-scribble-for-who
-	   #:configure-scribble-for-yaclml))
+	   #:configure-scribble-for-yaclml
+
+           #:string-column-modifier
+           #:combine-column-modifiers
+           #:stream-line-column-harder
+           #:read-stream-to-pos
+           ))

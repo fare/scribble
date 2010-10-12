@@ -162,17 +162,17 @@
 
 (defun parse-at-syntax (i)
   ;; Parse an @ expression.
-  (with-nesting ()
-    (let* (;;(i (make-instance 'ωs :stream stream)) ; buffered input
-           (o (make-string-output-stream)) ; buffered output of "current stuff"
-           (cmdonly nil)
-           (col 0)
-           (line ())
-           (lines ())
-           (mrof '()))) ; current form (reversed)
+  (let* ((o (make-string-output-stream)) ; buffered output of "current stuff"
+         (cmdonly nil)
+         (col 0)
+         (line ())
+         (lines ())
+         (mrof '())) ; current form (reversed)
     (labels
         ((?@1 () ; what to do after a @
            (cond
+             ((expect-char i #.(coerce '(#\space #\tab #\return #\newline) 'base-string))
+              (error "Unexpected whitespace after @"))
              ((expect-char i #\;)
               (?at-comment))
              (t
@@ -225,12 +225,11 @@
                 (funcall cont)))))
          (at-pipe ()
            (read-char i)
-           (let ((r (read-to-char #\| i)))
-             (multiple-value-bind (s #|n|#) (read-from-string r)
-               #|(unless (symbolp s)
-               (error "Expected a symbol, got ~S" r))
-               (unless (= n (length r))
-               (error "Unexpected characters in ~S" r))|#
+           (let ((r (read-to-char #\| i))
+                 (eof '#:eof))
+             (multiple-value-bind (s n) (read-from-string r)
+               (unless (eq eof (ignore-errors (read-from-string r nil eof :start n)))
+                 (error "Unexpected characters in ~S after position ~D" r n))
                (setf cmdonly t)
                (form! s)
                (?end))))
@@ -407,7 +406,7 @@
                (reverse mrof))))
       (?@1))))
 
-(defun do-enable-scribble-at-syntax (&optional (readtable *readtable*))
+(defun do-enable-scribble-at-syntax (&key (readtable *readtable*) scribe)
   (enable-quasiquote :readtable readtable)
   (set-macro-character
    #\[ #'(lambda (stream char)
@@ -434,7 +433,8 @@
            (declare (ignore char))
            (parse-at-syntax stream))
    nil readtable)
-  ;;(do-enable-scribble-syntax readtable) ; backward compatibility with former scribble?
+  (when scribe ;; backward compatibility with former scribble?
+    (do-enable-scribble-syntax readtable))
   (set-macro-character
    #\| #'(lambda (stream char)
            (declare (ignore stream char))
@@ -443,10 +443,17 @@
   t)
 
 (defvar *scribble-at-readtable* nil)
-(defun enable-scribble-at-syntax (&optional (readtable *readtable*))
+(defun enable-scribble-at-syntax (&key (readtable *readtable*) (scribe nil))
   (setf *scribble-at-readtable* (push-readtable readtable))
-  (do-enable-scribble-at-syntax *scribble-at-readtable*)
+  (do-enable-scribble-at-syntax :readtable *scribble-at-readtable* :scribe scribe)
   *scribble-at-readtable*)
+(defun disable-scribble-syntax ()
+  (pop-readtable))
+(defun reenable-scribble-at-syntax (&key scribe)
+  (if (readtablep *scribble-at-readtable*)
+      (enable-scribble-at-syntax :scribe scribe)
+    (push-readtable *scribble-at-readtable*))
+  *scribble-readtable*)
 
 (defun parse-at-string (x)
   (with-input-from-string (i x)

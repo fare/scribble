@@ -5,7 +5,9 @@
   #+(or clisp sbcl ccl)
   (:import-from #+clisp :gray #+sbcl :sb-gray #+ccl :ccl
                 :stream-line-column)
-  (:export #:enable-scribble-syntax #:disable-scribble-syntax
+  (:export #:enable-scribble-at-syntax #:disable-scribble-at-syntax
+	   #:reenable-scribble-at-syntax
+           #:enable-scribble-syntax #:disable-scribble-syntax
 	   #:reenable-scribble-syntax
 	   #:enable-sub-scribble-syntax #:disable-sub-scribble-syntax
 	   #:reenable-sub-scribble-syntax

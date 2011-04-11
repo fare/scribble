@@ -119,7 +119,7 @@ scribble returns from the head and body of text in bracket-colon syntax")
     ((head ()
        (match
         { [#\: !(let* ((head (within-scribble-package
-			      (read-preserving-whitespace st t t t)))
+			      (read-preserving-whitespace st t t nil)))
 		       (ignore (skip-spaces))
 		       (body (body)))
 		  (declare (ignore ignore))
@@ -151,7 +151,7 @@ scribble returns from the head and body of text in bracket-colon syntax")
 			     (body))]
 	        [#\, !(progn (flush)
 			     (unread-char #\, st)
-			     (add (read-preserving-whitespace st t t t))
+			     (add (read-preserving-whitespace st t t nil))
 			     (body))]
 	        [#\[ !(progn (flush)
 			     (add (parse-bracket st))

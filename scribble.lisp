@@ -129,7 +129,7 @@
 
 (defvar *lf* (string #\newline))
 
-(memo:define-memo-function n-spaces (n)
+(fmemo:define-memo-function n-spaces (n)
   (make-string n :initial-element #\space :element-type 'base-char))
 
 (defun expect-char (i &optional expectation)

@@ -5,6 +5,8 @@
 
 (in-package :scribble)
 
+(eval-now
+
 (defun parse-at-syntax (i)
   ;; Parse an @ expression.
   (let* ((o (make-string-output-stream)) ; buffered output of "current stuff"
@@ -288,3 +290,5 @@
   (with-input-from-string (i x)
     (let ((*readtable* *scribble-at-readtable*))
       (scribble::parse-at-syntax i))))
+
+);eval-now

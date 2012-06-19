@@ -5,6 +5,7 @@
 (in-package :scribble)
 (named-readtables:in-readtable :meta)
 
+(eval-now
 ; -----------------------------------------------------------------------------
 ;;; Customizing string preprocessing
 
@@ -278,3 +279,4 @@ The author wrote this support, but didn't test it."
 		      :cons 'cons))
 
 (named-readtables:in-readtable :standard)
+);eval-now

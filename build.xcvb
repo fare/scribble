@@ -3,7 +3,7 @@
  (:fullname
   "scribble"
   :depends-on
-  ("package" "scribble-scribe" "scribble")
+  ("package" "utilities" "stream-line-column" "skribe" "racket" "readtables")
   :build-depends-on
   ("meta" "fare-utils" "fare-matcher")
   :supersedes-asdf

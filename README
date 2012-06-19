@@ -1,43 +1,65 @@
 Scribble: SCRibe-like reader extension for Common Lisp
-Copyright (c) 2002-2011 by Fare Rideau < fare at tunes dot org >
+Copyright (c) 2002-2012 by Fare Rideau < fare at tunes dot org >
 	http://www.cliki.net/Fare%20Rideau
 
 HOME PAGE:
 	http://www.cliki.net/Scribble
 
 LICENSE:
-	http://www.geocities.com/SoHo/Cafe/5947/bugroff.html
+	http://tunes.org/legalese/bugroff.html
 You may at your leisure use the LLGPL instead:
 	http://www.cliki.net/LLGPL
 
 DEPENDENCY:
 This package depends on Meta by Jochen Schmidt, version 1.0.0 or later.
 	http://www.cliki.net/Meta
-Now also: closer-mop meta fare-utils fare-matcher
+Now also: meta fare-utils fare-matcher named-readtables
 
 USAGE:
 You can enable Racket-like Scribble behavior for the macro-character #\@ with
 	(scribble:enable-scribble-at-syntax)
 and disable it with
 	(scribble:disable-scribble-at-syntax)
+You may also use
+	(named-readtables:in-readtable :scribble-racket)
+Or
+	(named-readtables:in-readtable :scribble-both)
+Or
+	(named-readtables:in-readtable :scribble)
 For details, see:
 	http://docs.racket-lang.org/scribble/reader.html
 
-If you additionally pass the keyword argument :scribe t
+If you additionally pass the keyword argument :skribe t
 You will also have Skribe-like syntax.
 
 You can enable only Skribe-like syntax for the macro-character #\[ with
 	(scribble:enable-scribble-syntax)
 and disable it with
 	(scribble:disable-scribble-syntax)
+You may also use
+	(named-readtables:in-readtable :scribble-skribe)
+Or
+	(named-readtables:in-readtable :scribble-both)
+Or
+	(named-readtables:in-readtable :scribble)
+
 Alternatively, you can enable behaviour for the character #\[
 under the dispatching macro-character #\# using
 	(scribble:enable-sub-scribble-syntax)
 	(scribble:disable-sub-scribble-syntax)
 
 
+AT SYNTAX:
+The syntax of text after @ is just like
+Racket's Scribble syntax by Eli Barzilay.
+His Scribble "at-syntax" is described thus:
+	http://barzilay.org/research.html
+	http://barzilay.org/misc/scribble-reader.pdf
+	http://docs.racket-lang.org/scribble/reader.html
+
+
 BASIC SYNTAX:
-The syntax of text within brackets is Scribe-like:
+The syntax of text within brackets is Skribe-like:
 
 * Text between brackets will expand to a string containing said text,
  unless there are escape forms in the text,
@@ -214,21 +236,11 @@ TODO:
 Share and enjoy!
 
 
-
-Suggested extensions:
-
-* something to easily get (foo " bar") or (foo "\nbar")
-* something to easily quote stuff with text in it.
-   [=====|[this is scribble text] [==| Example stuff |==] |=====]
-* get more ideas from Eli Barzilay who implemented the unrelated Racket Scribble syntax @foo{bar}
-
-
-Eli offered to rewrite my whole code base from Scribe-like Scribble syntax
-to his newfangled Racket Scribble syntax if I write the backend.
-His Scribble (he started using the name in 2006, I started using it in 2003 or earlier)
-http://barzilay.org/research.html
-http://barzilay.org/misc/scribble-reader.pdf
-http://docs.racket-lang.org/scribble/reader.html
-
 For historical information, see also Daniel Herring's partial implementation:
 http://lists.libcl.com/pipermail/libcl-devel-libcl.com/2010-January/000094.html
+
+
+NAMING NOTE
+
+Eli Barzilay started using the name "Scribble" in 2006;
+I started using it in 2003 or earlier for my Scribe-like syntax, now Skribe-like.

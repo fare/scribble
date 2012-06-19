@@ -1,7 +1,7 @@
-#+xcvb (module (:depends-on nil))
+#+xcvb (module ())
 
 (cl:defpackage #:scribble
-  (:use #:common-lisp #|#:ll-omega|# #:meta :fare-utils :fare-quasiquote)
+  (:use #:common-lisp #:meta :fare-utils :fare-quasiquote :named-readtables)
   #+(or clisp sbcl ccl)
   (:import-from #+clisp :gray #+sbcl :sb-gray #+ccl :ccl
                 :stream-line-column)
@@ -28,4 +28,6 @@
            #:combine-column-modifiers
            #:stream-line-column-harder
            #:read-stream-to-pos
+
+           
            ))

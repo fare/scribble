@@ -1,14 +1,9 @@
-#+xcvb (module (:depends-on ("package")))
 ;;; -*- Mode: Lisp ; Base: 10 ; Syntax: ANSI-Common-Lisp -*-
-;;; Scribble: SCRibe-like reader extension for Common Lisp
-;;; Copyright (c) 2002-2010 by Fare Rideau < fare at tunes dot org >
 ;;; See README.
+#+xcvb (module (:depends-on ("utilities")))
 
 (in-package :scribble)
-
-; -----------------------------------------------------------------------------
-;;; Optimization
-;(declaim (optimize (speed 3) (safety 1) (debug 0)))
+(named-readtables:in-readtable :meta)
 
 ; -----------------------------------------------------------------------------
 ;;; Customizing string preprocessing
@@ -97,22 +92,12 @@ scribble returns from the head and body of text in bracket-colon syntax")
    (cons (ensure-list head) body))
 
 ; -----------------------------------------------------------------------------
-;;; Some error handling
-(defun issue-parse-error (fmt &rest r)
-    #+sbcl (error 'sb-int:simple-parse-error
-		  :format-control fmt
-		  :format-arguments r)
-    #-sbcl (apply 'error fmt r))
-
-; -----------------------------------------------------------------------------
 ;;; The META parser
 
 (deftype spacing-character ()
   "spacing character"
   '(member #\space #\newline #\tab #\linefeed #\return #\page))
 
-(eval-when (:compile-toplevel :load-toplevel :execute)
- (enable-meta-syntax))
 (defun parse-bracket (stream &aux c (s (make-string-output-stream)) (l '()))
   (with-stream-meta (st stream)
    (labels
@@ -139,7 +124,7 @@ scribble returns from the head and body of text in bracket-colon syntax")
        (match {[@(spacing-character c) !(skip-spaces)]}))
      (body ()
        (match
-        {[#\[ !(issue-parse-error
+        {[#\[ !(simple-parse-error
 		"Nested bracket neither after backslash or comma on ~A @ ~A."
 		stream (file-position stream))]
 	 [#\] !(progn
@@ -160,8 +145,6 @@ scribble returns from the head and body of text in bracket-colon syntax")
 	 [#\\ @(character c) !(progn (add-char c) (body))]
 	 [@(character c) !(progn (add-char c) (body))]})))
     (head))))
-(eval-when (:compile-toplevel :load-toplevel :execute)
-  (disable-meta-syntax))
 
 
 ; -----------------------------------------------------------------------------
@@ -184,17 +167,14 @@ scribble returns from the head and body of text in bracket-colon syntax")
   (setf *scribble-readtable* (push-readtable readtable))
   (do-enable-scribble-syntax *scribble-readtable*)
   *scribble-readtable*)
+
+(defun read-skribe-bracket (stream char)
+  (declare (ignore char))
+  (parse-bracket stream))
+
 (defun do-enable-scribble-syntax (&optional readtable)
-  (set-macro-character
-   #\] #'(lambda (stream char)
-           (declare (ignore char))
-           (issue-parse-error "] outside of a [ construct on ~A @ ~A." stream (file-position stream)))
-   nil readtable)
-  (set-macro-character
-   #\[ #'(lambda (stream char)
-           (declare (ignore char))
-           (parse-bracket stream))
-   nil readtable)
+  (set-macro-character #\] #'unbalanced-paren nil readtable)
+  (set-macro-character #\[ #'read-skribe-bracket nil readtable)
   t)
 (defun disable-scribble-syntax ()
   (pop-readtable))
@@ -211,7 +191,7 @@ scribble returns from the head and body of text in bracket-colon syntax")
   (set-macro-character #\]
       #'(lambda (stream char)
       (declare (ignore char))
-      (issue-parse-error "] outside of a #[ construct on ~A @ ~A." stream (file-position stream))))
+      (simple-parse-error "] outside of a #[ construct on ~A @ ~A." stream (file-position stream))))
   (set-dispatch-macro-character #\# #\[
       #'(lambda (stream subchar arg)
 	  (declare (ignore subchar arg))
@@ -296,3 +276,5 @@ The author wrote this support, but didn't test it."
   (configure-scribble :default-head (read-from-string "yaclml:yaclml-quote")
 		      :package (find-package '#:it.bese.yaclml)
 		      :cons 'cons))
+
+(named-readtables:in-readtable :standard)

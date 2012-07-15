@@ -284,7 +284,7 @@
   (if (readtablep *scribble-at-readtable*)
       (enable-scribble-at-syntax :scribe scribe)
     (push-readtable *scribble-at-readtable*))
-  *scribble-readtable*)
+  *scribble-at-readtable*)
 
 (defun parse-at-string (x)
   (with-input-from-string (i x)

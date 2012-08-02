@@ -1,7 +1,7 @@
 #+xcvb (module ())
 
 (cl:defpackage #:scribble
-  (:use #:common-lisp #:meta :fare-utils :fare-quasiquote :named-readtables)
+  (:use #:common-lisp #:meta :fare-utils :asdf-utils :fare-quasiquote :named-readtables)
   #+(or clisp sbcl ccl)
   (:import-from #+clisp :gray #+sbcl :sb-gray #+ccl :ccl
                 :stream-line-column)

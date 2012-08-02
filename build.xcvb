@@ -1,10 +1,7 @@
-#+xcvb
 (module
- (:fullname
-  "scribble"
+ (:fullname "scribble"
   :build-depends-on
-  ("meta" "fare-utils" "fare-matcher" "named-readtables")
+  ("asdf-utils" "meta" "fare-utils" "fare-matcher" (:asdf "named-readtables"))
   :depends-on
   ("package" "utilities" "stream-line-column" "skribe" "racket" "readtables")
-  :supersedes-asdf
-  ("scribble")))
+  :supersedes-asdf ("scribble")))

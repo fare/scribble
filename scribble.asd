@@ -4,8 +4,8 @@
   :long-description "Scribble offers two syntax extensions allowing you to very nicely
 mix text markup data and Lisp code. One syntax is a port to CL of Racket's Scribble syntax,
 and the other is a port to CL of Bigloo's Skribe syntax."
-  :depends-on (:meta :asdf-utils :fare-utils :fare-matcher :fare-memoization
-               :fare-quasiquote-readtable :named-readtables)
+  :depends-on (:meta :fare-utils :fare-memoization
+                     :fare-quasiquote-readtable :named-readtables)
   :components
   ((:file "package")
    (:file "utilities" :depends-on ("package"))

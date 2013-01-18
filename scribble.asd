@@ -10,6 +10,6 @@ and the other is a port to CL of Bigloo's Skribe syntax."
   ((:file "package")
    (:file "utilities" :depends-on ("package"))
    (:file "stream-line-column" :depends-on ("package"))
-   (:file "racket" :depends-on ("package"))
+   (:file "racket" :depends-on ("utilities"))
    (:file "skribe" :depends-on ("utilities"))
    (:file "readtables" :depends-on ("racket" "skribe"))))

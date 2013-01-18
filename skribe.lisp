@@ -20,7 +20,7 @@ to enable compile-time preprocessing")
 (defun pp (x)
   "Default preprocessing of Scribble strings: compile-time identity.
 Globally, locally or lexically alter the binding of symbol-function scribble:pp
-in your macros so as to customize the behaviour of preprocessing"
+in your macros so as to customize the behavior of preprocessing"
   (let ((f *scribble-preprocessor*))
     (if f (funcall f x) x)))
 
@@ -42,12 +42,12 @@ in your macros so as to customize the behaviour of preprocessing"
 scribble returns from the list of components in parsed bracketed text")
 
 (defparameter *scribble-default-head* 'cl:list
-   "Scribble customization parameter: assuming default scribble-list behaviour,
+   "Scribble customization parameter: assuming default scribble-list behavior,
 modify the head of the form returned to combine at runtime the multiple
 components of the bracketed text being parsed")
 
 (defun default-scribble-list (&rest list)
-   "Default behaviour for returning components of bracketed text"
+   "Default behavior for returning components of bracketed text"
    (if (null (cdr list)) (car list) ; returns nil when no components
      (apply 'do-scribble-list list)))
 

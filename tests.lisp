@@ -1,5 +1,5 @@
 (defpackage :scribble-test
-  (:use :common-lisp :scribble :hu.dwim.stefil :fare-utils))
+  (:use :common-lisp :scribble :hu.dwim.stefil :fare-utils :uiop))
 
 (in-package :scribble-test)
 

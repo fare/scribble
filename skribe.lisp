@@ -83,9 +83,6 @@ scribble returns from the head and body of text in bracket-colon syntax")
 (defun scribble-cons (head body)
   (funcall *scribble-cons* head body))
 
-(defun ensure-list (foo)
-  (if (listp foo) foo (list foo)))
-
 (defun default-scribble-cons (head body)
    (append (ensure-list head) body))
 

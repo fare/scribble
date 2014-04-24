@@ -1,11 +1,14 @@
 ;;; -*- Lisp -*-
-(defsystem scribble
+(defsystem "scribble"
   :description "Syntax extensions akin to Racket's Scribble and Bigloo's Skribe"
   :long-description "Scribble offers two syntax extensions allowing you to very nicely
 mix text markup data and Lisp code. One syntax is a port to CL of Racket's Scribble syntax,
 and the other is a port to CL of Bigloo's Skribe syntax."
-  :depends-on (:meta :fare-utils :fare-memoization
-                     :fare-quasiquote-readtable :named-readtables)
+  :version "1.0.0"
+  :depends-on ("meta"
+               (:version "fare-utils" "1.0.0")
+               "fare-memoization"
+               (:version "fare-quasiquote-readtable" "0.9.6"))
   :components
   ((:file "package")
    (:file "utilities" :depends-on ("package"))

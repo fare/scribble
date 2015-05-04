@@ -273,8 +273,9 @@ Faré λ 自由 foo
     indented
       from the 'is'.
   }
-        @'but{that isn't
-              indented}))
+        @'but{that is
+                indented
+              from 'that'.}))
 " s)
     :close-stream
     (ensure-directories-exist (compile-file-pathname* p))
@@ -283,5 +284,5 @@ Faré λ 自由 foo
                `(("foo " 3)
                  (foo bar "baz " (quux) " toto")
                  (this "is" ,*lf* "  " "indented" ,*lf* "    " "from the 'is'.")
-                 (but "that isn't" ,*lf* "indented")))))
+                 (but "that is" ,*lf* "  " "indented" ,*lf* "from 'that'.")))))
   t)

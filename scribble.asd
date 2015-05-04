@@ -15,4 +15,11 @@ and the other is a port to CL of Bigloo's Skribe syntax."
    (:file "stream-line-column" :depends-on ("package"))
    (:file "racket" :depends-on ("utilities"))
    (:file "skribe" :depends-on ("utilities"))
-   (:file "readtables" :depends-on ("racket" "skribe"))))
+   (:file "readtables" :depends-on ("racket" "skribe")))
+  :in-order-to (#+asdf3 (test-op (test-op "scribble/test"))))
+
+#+asdf3
+(defsystem "scribble/test"
+  :depends-on ("scribble" "hu.dwim.stefil" "babel")
+  :components ((:file "test"))
+  :perform (test-op (o c) (call-function "scribble/test:test-suite")))

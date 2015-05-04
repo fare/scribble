@@ -1,7 +1,10 @@
-(defpackage :scribble-test
-  (:use :common-lisp :scribble :hu.dwim.stefil :fare-utils :uiop))
+(defpackage :scribble/test
+  (:use :common-lisp :scribble :hu.dwim.stefil :fare-utils :uiop :named-readtables)
+  (:export #:test-suite))
 
-(in-package :scribble-test)
+(in-package :scribble/test)
+
+(defsuite* (test-suite :in root-suite :documentation "Testing scribble"))
 
 (deftest test-column-modifier ()
   (macrolet ((ccm (x y z)
@@ -13,7 +16,7 @@
                             (string-column-modifier ,(format nil x #\tab)))
                            '(,a ,b ,c)))))
     (scm "abcde" 5 nil nil)
-    (scm "fooabcde" nil 5 nil)
+    (scm "foo~%abcde" nil 5 3)
     (scm "foo bar~%abcde" nil 5 7)
     (scm "abcd~cfgh" 4 3 nil)
     (scm "foo bar~%abcde~cfgh" nil 11 7)
@@ -71,11 +74,10 @@ Faré λ 自由 foo
 (deftest test-scribble-at ()
   ;; Tests taken from http://docs.racket-lang.org/scribble/reader.html
   (macrolet ((a (x y)
-               `(is (equal (p ,x)
-                           ',(subst scribble::*lf* '*lf* y))))
+               `(is (equal (p ,x) ',(subst scribble::*lf* '*lf* y))))
              (a* (&rest r)
                `(flet ((p (x)
-                         (let ((*readtable* scribble::*scribble-readtable*))
+                         (let ((*readtable* (find-readtable :scribble)))
                            (read-from-string (strcat "      " x)))))
                   ,@(loop :for (x y) :on r :by #'cddr :collect `(a ,x ,y)))))
     (a*

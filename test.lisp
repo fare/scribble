@@ -1,5 +1,6 @@
 (defpackage :scribble/test
   (:use :common-lisp :scribble :hu.dwim.stefil :fare-utils :uiop :named-readtables)
+  (:import-from :scribble #:*lf*)
   (:export #:test-suite))
 
 (in-package :scribble/test)
@@ -70,7 +71,7 @@ Faré λ 自由 foo
 (deftest test-scribble-at ()
   ;; Tests taken from http://docs.racket-lang.org/scribble/reader.html
   (macrolet ((a (x y)
-               `(is (equal (p ,x) ',(subst scribble::*lf* '*lf* y))))
+               `(is (equal (p ,x) ',(subst *lf* '*lf* y))))
              (a* (&rest r)
                `(flet ((p (x)
                          (let ((*readtable* (find-readtable :scribble)))
@@ -266,12 +267,18 @@ Faré λ 自由 foo
  (in-readtable :scribble)
  (defun compiled-foo ()
    (list [foo ,(+ 1 2)]
-         @'foo[bar]{baz @(quux) toto}))
+         @'foo[bar]{baz @(quux) toto}
+         '@this{
+  is
+    indented
+      from the 'is'.
+  }))
 " s)
     :close-stream
     (ensure-directories-exist (compile-file-pathname* p))
     (load (compile-file* p))
-    (is (funcall 'compiled-foo)
-        '(("foo " 3)
-          (foo bar "baz " (quux) " toto"))))
+    (is (equal (funcall 'compiled-foo)
+               `(("foo " 3)
+                 (foo bar "baz " (quux) " toto")
+                 (this "is" ,*lf* "  " "indented" ,*lf* "    " "from the 'is'.")))))
   t)

@@ -32,20 +32,18 @@
     (ccm (5 15) (23 42) (5 82))))
 
 
-(defparameter *u* "/tmp/u")
-
 (defparameter *external-format*
   #-ccl :default
   #+ccl (ccl:make-external-format :character-encoding :utf-8))
 
 (deftest test-file-position ()
-  (with-open-file (s *u* :direction :output :if-exists :rename-and-delete)
+  (with-temporary-file (:stream s :pathname p :direction :output)
     (princ "Hello, World
 Faré λ 自由 foo
 æéïôù
-" s))
-
-  (with-open-file (s *u* :direction :input :external-format *external-format*)
+" s)
+    :close-stream
+  (with-open-file (s p :direction :input :external-format *external-format*)
     (is (file-length s) 42)
     (let ((cpos
            (loop :for p = (file-position s)
@@ -66,9 +64,7 @@ Faré λ 自由 foo
         (is (equal (read-stream-to-pos s p) st))
         (is (eql (file-position s) p))
         (is (eql (stream-line-column-harder s) col))
-        )))
-
-  (delete-file *u*)
+        ))))
   t)
 
 (deftest test-scribble-at ()
@@ -262,3 +258,20 @@ Faré λ 自由 foo
         @|| bar @||
         @|| baz}" (foo " bar " *lf* " baz")
 )))
+
+(deftest test-compile-file ()
+  (with-temporary-file (:stream s :pathname p :type "lisp" :direction :output)
+    (princ "
+ (in-package :scribble/test)
+ (in-readtable :scribble)
+ (defun compiled-foo ()
+   (list [foo ,(+ 1 2)]
+         @'foo[bar]{baz @(quux) toto}))
+" s)
+    :close-stream
+    (ensure-directories-exist (compile-file-pathname* p))
+    (load (compile-file* p))
+    (is (funcall 'compiled-foo)
+        '(("foo " 3)
+          (foo bar "baz " (quux) " toto"))))
+  t)

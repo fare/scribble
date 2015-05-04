@@ -272,7 +272,9 @@ Faré λ 自由 foo
   is
     indented
       from the 'is'.
-  }))
+  }
+        @'but{that isn't
+              indented}))
 " s)
     :close-stream
     (ensure-directories-exist (compile-file-pathname* p))
@@ -280,5 +282,6 @@ Faré λ 自由 foo
     (is (equal (funcall 'compiled-foo)
                `(("foo " 3)
                  (foo bar "baz " (quux) " toto")
-                 (this "is" ,*lf* "  " "indented" ,*lf* "    " "from the 'is'.")))))
+                 (this "is" ,*lf* "  " "indented" ,*lf* "    " "from the 'is'.")
+                 (but "that isn't" ,*lf* "indented")))))
   t)

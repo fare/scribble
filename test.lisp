@@ -68,17 +68,11 @@ Faré λ 自由 foo
         ))))
   t)
 
-(deftest test-scribble-at ()
-  ;; Tests taken from http://docs.racket-lang.org/scribble/reader.html
-  (macrolet ((a (x y)
-               `(is (equal (p ,x) ',(subst *lf* '*lf* y))))
-             (a* (&rest r)
-               `(flet ((p (x)
-                         (let ((*readtable* (find-readtable :scribble)))
-                           (read-from-string (strcat "      " x)))))
-                  ,@(loop :for (x y) :on r :by #'cddr :collect `(a ,x ,y)))))
-    (a*
-     "@foo{blah blah blah}" (foo "blah blah blah")
+(eval-now
+(defparameter *scribble-at-tests*
+  (subst
+   *lf* '*lf*
+   '("@foo{blah blah blah}" (foo "blah blah blah")
      "@foo{blah \"blah\" (`blah'?)}" (foo "blah \"blah\" (`blah'?)")
      "@foo[1 2]{3 4}" (foo 1 2 "3 4")
      "@foo[1 2 3 4]" (foo 1 2 3 4)
@@ -257,32 +251,35 @@ Faré λ 自由 foo
 |#
      "@foo{
         @|| bar @||
-        @|| baz}" (foo " bar " *lf* " baz")
-)))
+        @|| baz}" (foo " bar " *lf* " baz")))))
+
+(deftest test-scribble-at ()
+  ;; Tests taken from http://docs.racket-lang.org/scribble/reader.html
+  (macrolet ((a (x y)
+               `(is (equal (p ,x) ',(subst *lf* '*lf* y))))
+             (a* (&rest r)
+               `(flet ((p (x)
+                         (let ((*readtable* (find-readtable :scribble)))
+                           (read-from-string (strcat "      " x)))))
+                  ,@(loop :for (x y) :on r :by #'cddr :collect `(a ,x ,y))))
+             (a-tests ()
+               `(a* ,@*scribble-at-tests*)))
+    (a-tests)))
+
+(defun write-scribble-test (s)
+  (format s
+          "(in-package :scribble/test)~%~
+           (in-readtable :scribble)~%~
+           (defun compiled-foo ()~%")
+  (loop :for (x y) :on *scribble-at-tests* :by #'cddr :do
+    (format s "~%  (is '~A '~S)~%" x y))
+  (format s "~%  (+ 40 2))~%"))
 
 (deftest test-compile-file ()
   (with-temporary-file (:stream s :pathname p :type "lisp" :direction :output)
-    (princ "
- (in-package :scribble/test)
- (in-readtable :scribble)
- (defun compiled-foo ()
-   (list [foo ,(+ 1 2)]
-         @'foo[bar]{baz @(quux) toto}
-         '@this{
-  is
-    indented
-      from the 'is'.
-  }
-        @'but{that is
-                indented
-              from 'that'.}))
-" s)
+    (write-scribble-test s)
     :close-stream
     (ensure-directories-exist (compile-file-pathname* p))
     (load (compile-file* p))
-    (is (equal (funcall 'compiled-foo)
-               `(("foo " 3)
-                 (foo bar "baz " (quux) " toto")
-                 (this "is" ,*lf* "  " "indented" ,*lf* "    " "from the 'is'.")
-                 (but "that is" ,*lf* "  " "indented" ,*lf* "from 'that'.")))))
+    (is (equal (funcall 'compiled-foo) 42)))
   t)

@@ -15,8 +15,10 @@
          (line ())
          (lines ())
          (mrof '())) ; current form (reversed)
-    (labels
-        ((?@1 () ; what to do after a @
+    (labels ;; functions starting with ? process input after matching what is described in the name,
+        ;; e.g. ?at processes input after an at-sign @.
+        ;; those ending with ! issue output.
+        ((?at () ; what to do after a @
            (cond
              ((expect-char i #.(coerce '(#\space #\tab #\return #\newline) 'base-string))
               (simple-parse-error "Unexpected whitespace after @"))
@@ -24,7 +26,7 @@
               (?at-comment))
              (t
               (?punctuation))))
-         (?at-comment ()
+         (?at-comment () ; what to do after @;
            (cond
              ((expect-char i #\{) (?{text}))
              (t (read-line i)))
@@ -56,12 +58,12 @@
            (let ((char (expect-char i "|[{")))
              (case char
                ((#\|)
-                (maybe-alttext #'at-pipe))
+                (?maybe-alttext #'?at-pipe))
                ((#\[ #\{)
                 (?datatext char))
                (t
                 (?cmd1)))))
-         (maybe-alttext (cont)
+         (?maybe-alttext (cont)
            (unread-char #\| i)
            (let ((k (?newkey)))
              (cond
@@ -70,7 +72,7 @@
                 (?{alttext} k))
                (t
                 (funcall cont)))))
-         (at-pipe ()
+         (?at-pipe ()
            (read-char i)
            (let ((r (read-to-char #\| i))
                  (eof '#:eof))
@@ -105,7 +107,7 @@
               (setf cmdonly nil)
               (?{text}))
              ((expect-char i #\|)
-              (maybe-alttext #'?end))
+              (?maybe-alttext #'?end))
              (t (?end))))
          (?newkey ()
            (loop
@@ -251,7 +253,7 @@
            (if (and cmdonly (length=n-p mrof 1))
                (car mrof)
                (reverse mrof))))
-      (?@1))))
+      (?at)))) ;; a @ character was just read by who called this function, so start parsing at ?at
 
 (defun read-at-syntax (stream &optional char)
   (declare (ignore char))

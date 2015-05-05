@@ -32,7 +32,6 @@
     (ccm (15 nil) (23 42) (38 42))
     (ccm (5 15) (23 42) (5 82))))
 
-
 (defparameter *external-format*
   #-ccl :default
   #+ccl (ccl:make-external-format :character-encoding :utf-8))
@@ -69,7 +68,30 @@ Faré λ 自由 foo
   t)
 
 (eval-now
-(defparameter *scribble-at-tests*
+(defparameter *skribe-tests* ;; test cases for our Skribe-like syntax.
+  ;; supposes that *scribble-preprocess* is bound to nil
+  '("[Hello, world]" "Hello, world"
+    "[blah \"blah\" (`blah'?) \\[bloh\\]; blih!]" "blah \"blah\" (`blah'?) [bloh]; blih!"
+    "[:(foo 1 2) 3 4]" (foo 1 2 "3 4")
+    "[:foo ,(id 1) ,[2] ,3 ,4]" (foo (id 1) " " "2" " ,3 ,4")
+    "[:(foo :width 2) blah blah]" (foo :width 2 "blah blah")
+    "[:foo blah blah]" (foo "blah blah")
+    "[:foo blah blah
+           yada yada]" (foo "blah blah
+           yada yada")
+    "[:foo bar ,[:baz 3] blah]" (foo "bar " (baz "3") " blah")
+    "[:foo,[:b,[:u,3] ,[:u 4]] blah]" (foo (b (u ",3") " " (u "4")) " blah")
+    "[:C while (*(p++)) *p = '\\\\n';]" (C "while (*(p++)) *p = '\\n';")
+    "[blah ,(3)]" (list "blah " (3))
+    "[:foo]" (foo)
+    "[,foo]" ",foo"
+    "[blah ,(foo) blah]" (LIST "blah " (FOO) " blah")
+    "[:foo(+ 1 2) -> ,(+ 1 2)!]" (foo "(+ 1 2) -> " (+ 1 2) "!")
+    "[:foo (+ 1 2) -> ,(+ 1 2)!]" (foo "(+ 1 2) -> " (+ 1 2) "!")
+    "[:foo ,[A ,(id \"string\") escape]]" (foo (list "A " (id "string") " escape"))
+    "[:(foo bar) baz]" (foo bar "baz")))
+
+(defparameter *racket-tests* ;; test cases taken from the Racket Scribble test suite.
   (subst
    *lf* '*lf*
    '("@foo{blah blah blah}" (foo "blah blah blah")
@@ -253,17 +275,18 @@ Faré λ 自由 foo
         @|| bar @||
         @|| baz}" (foo " bar " *lf* " baz")))))
 
-(deftest test-scribble-at ()
+(deftest test-scribble-from-string ()
   ;; Tests taken from http://docs.racket-lang.org/scribble/reader.html
   (macrolet ((a (x y)
                `(is (equal (p ,x) ',(subst *lf* '*lf* y))))
              (a* (&rest r)
                `(flet ((p (x)
-                         (let ((*readtable* (find-readtable :scribble)))
+                         (let ((*readtable* (find-readtable :scribble))
+                               (*scribble-preprocess* nil))
                            (read-from-string (strcat "      " x)))))
                   ,@(loop :for (x y) :on r :by #'cddr :collect `(a ,x ,y))))
              (a-tests ()
-               `(a* ,@*scribble-at-tests*)))
+               `(a* ,@*racket-tests* ,@*skribe-tests*)))
     (a-tests)))
 
 (defun write-scribble-test (s)
@@ -271,7 +294,7 @@ Faré λ 自由 foo
           "(in-package :scribble/test)~%~
            (in-readtable :scribble)~%~
            (defun compiled-foo ()~%")
-  (loop :for (x y) :on *scribble-at-tests* :by #'cddr :do
+  (loop :for (x y) :on (append *skribe-tests* *racket-tests*) :by #'cddr :do
     (format s "~%  (is '~A '~S)~%" x y))
   (format s "~%  (+ 40 2))~%"))
 
@@ -280,6 +303,7 @@ Faré λ 自由 foo
     (write-scribble-test s)
     :close-stream
     (ensure-directories-exist (compile-file-pathname* p))
-    (load (compile-file* p))
+    (let ((*scribble-preprocess* nil))
+      (load (compile-file* p)))
     (is (equal (funcall 'compiled-foo) 42)))
   t)

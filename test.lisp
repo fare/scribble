@@ -130,6 +130,7 @@ Faré λ 自由 foo
      "@foo|{bar}@{baz}|" (foo "bar}@{baz")
      "@foo|{bar |@x{X} baz}|" (foo "bar " (x "X") " baz")
      "@foo|{bar |@x|{@}| baz}|" (foo "bar " (x "@") " baz")
+     "@foo|-+{bar}@|{baz}+-|" (foo "bar}@|{baz")
      "@foo|--{bar}@|{baz}--|" (foo "bar}@|{baz")
      "@foo|<<{bar}@|{baz}>>|" (foo "bar}@|{baz")
      "(define \\@email \"foo@bar.com\")" (define \@email "foo@bar.com")
@@ -275,16 +276,17 @@ Faré λ 自由 foo
         @|| bar @||
         @|| baz}" (foo " bar " *lf* " baz")))))
 
+(defun p (x)
+  (let ((*readtable* (find-readtable :scribble))
+        (*scribble-preprocess* nil))
+    (read-from-string x)))
+
 (deftest test-scribble-from-string ()
   ;; Tests taken from http://docs.racket-lang.org/scribble/reader.html
   (macrolet ((a (x y)
-               `(is (equal (p ,x) ',(subst *lf* '*lf* y))))
+               `(is (equal (p ,(strcat "      " x)) ',(subst *lf* '*lf* y))))
              (a* (&rest r)
-               `(flet ((p (x)
-                         (let ((*readtable* (find-readtable :scribble))
-                               (*scribble-preprocess* nil))
-                           (read-from-string (strcat "      " x)))))
-                  ,@(loop :for (x y) :on r :by #'cddr :collect `(a ,x ,y))))
+               `(progn ,@(loop :for (x y) :on r :by #'cddr :collect `(a ,x ,y))))
              (a-tests ()
                `(a* ,@*racket-tests* ,@*skribe-tests*)))
     (a-tests)))

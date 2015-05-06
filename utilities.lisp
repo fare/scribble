@@ -31,6 +31,64 @@
   (and (typep x 'base-char)
        (<= (char-code x) 127)))
 
+(defun ascii-punctuation-char-p (x)
+  (and (typep x 'base-char)
+       (<= 33 (char-code x) 126)
+       (not (alphanumericp x))))
+
+
+; -----------------------------------------------------------------------------
+;;; Distinguished strings
+
+(defvar *lf* (string #\newline))
+
+(fmemo:define-memo-function n-spaces (n)
+  (make-string n :initial-element #\space :element-type 'base-char))
+
+
+; -----------------------------------------------------------------------------
+;;; Infinite look-ahead, required for @foo|----{ }----| processing.
+
+(defgeneric peek-char* (input))
+(defgeneric read-char* (input))
+(defgeneric unread-char* (input char))
+
+(defmethod peek-char* ((input stream))
+  (peek-char nil input nil nil t))
+(defmethod read-char* ((input stream))
+  (read-char input nil nil))
+(defmethod unread-char* ((input stream) char)
+  (unread-char char input))
+
+(defclass buffered-input ()
+  ((stream :initarg :stream :type stream :reader input-stream)
+   (buffer :initform (make-array '(16) :element-type 'character :adjustable t :fill-pointer 0) :reader input-buffer)))
+(defmethod peek-char* ((input buffered-input))
+  (let ((c (read-char* input)))
+    (when c (unread-char* input c))
+    c))
+(defmethod read-char* ((input buffered-input))
+  (let ((b (input-buffer input)))
+    (if (plusp (fill-pointer b)) (vector-pop b)
+        (read-char* (input-stream input)))))
+(defmethod unread-char* ((input buffered-input) char)
+  (vector-push-extend char (input-buffer input)))
+(defgeneric flush-buffer (input))
+(defmethod flush-buffer ((input buffered-input))
+  (let* ((b (input-buffer input))
+         (p (fill-pointer b)))
+    (assert (<= p 1))
+    (loop :for i :from (1- p) :downto 0 :do
+      (unread-char* (input-stream input) (aref b i))
+          :finally (setf (fill-pointer b) 0))))
+
+(defun unread-string (input string)
+  (loop :for char :across (reverse string) :do (unread-char* input char)))
+
+
+; -----------------------------------------------------------------------------
+;;; Basic parsing
+
 (defun expected-char-p (c expectation)
   (check-type c (or null character))
   (etypecase expectation
@@ -39,20 +97,16 @@
     (sequence (find c expectation))
     (function (funcall expectation c))))
 
-(defvar *lf* (string #\newline))
-
-(fmemo:define-memo-function n-spaces (n)
-  (make-string n :initial-element #\space :element-type 'base-char))
-
-(defun expect-char (i &optional expectation)
-  (let ((c (peek-char nil i nil nil t)))
-    (and (expected-char-p c expectation) (read-char i))))
+(defun expect-char (input &optional expectation)
+  (let ((c (peek-char* input)))
+    (and (expected-char-p c expectation) (read-char* input))))
 
 (defun expect-string (i s)
   (loop :for c :across s :for l :from 0 :do
     (unless (expect-char i c)
-      (return (values nil (subseq s l))))
-    :finally (return (values t l))))
+      (unread-string i (subseq s 0 l))
+      (return (values nil l)))
+    :finally (return (values t (length s)))))
 
 (defun skip-whitespace-return-column (i &optional (col 0))
   (loop :for c = (expect-char i #.(format nil " ~c" #\tab))

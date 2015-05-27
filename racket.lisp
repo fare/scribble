@@ -270,6 +270,8 @@
   (declare (ignore char))
   (parse-at-syntax stream))
 (defun forbidden-pipe-macro (stream char)
+  ;; if we allow pipes, then @foo|{bar}| gets read as @ followed by escaped symbol |foo{bar}|
+  ;; maybe we could make | a terminating macro and otherwise keep its meaning?
   (declare (ignore stream char))
   (simple-parse-error "| not allowed when at syntax enabled"))
 
@@ -281,9 +283,9 @@
     (s #\{ #'read-paren-list)
     (s #\} #'unbalanced-paren)
     (s #\@ #'read-at-syntax)
+    (s #\| #'forbidden-pipe-macro)
     (when (or scribe skribe) ;; backward compatibility with former scribble?
-      (do-enable-scribble-syntax table))
-    (s #\| #'forbidden-pipe-macro))
+      (do-enable-scribble-syntax table)))
   t)
 
 (defvar *scribble-at-readtable* nil)

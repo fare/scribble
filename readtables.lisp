@@ -11,8 +11,8 @@
     (:macro-char #\] #'unbalanced-paren)
     (:macro-char #\{ #'read-paren-list)
     (:macro-char #\} #'unbalanced-paren)
-    (:macro-char #\@ #'read-at-syntax)
-    (:macro-char #\| #'forbidden-pipe-macro))
+    (:macro-char #\| #'forbidden-pipe-macro)
+    (:macro-char #\@ #'read-at-syntax))
 
   (defreadtable :scribble-skribe-mixin
     (:macro-char #\[ #'read-skribe-bracket)

@@ -27,10 +27,6 @@
   (check-type x string)
   (map 'string 'mirror-char (reverse x)))
 
-(defun ascii-char-p (x)
-  (and (typep x 'base-char)
-       (<= (char-code x) 127)))
-
 (defun ascii-punctuation-char-p (x)
   (and (typep x 'base-char)
        (<= 33 (char-code x) 126)

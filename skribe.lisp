@@ -1,7 +1,5 @@
 ;;; -*- Mode: Lisp ; Base: 10 ; Syntax: ANSI-Common-Lisp -*-
 ;;; See README.
-#+xcvb (module (:depends-on ("utilities")))
-
 (in-package :scribble)
 (named-readtables:in-readtable :meta)
 

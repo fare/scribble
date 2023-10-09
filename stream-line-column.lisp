@@ -1,8 +1,5 @@
 ;; -*- Mode: Lisp ; Base: 10 ; Syntax: ANSI-Common-Lisp -*-
 ;;; stream-line-column
-
-#+xcvb (module (:depends-on ("package")))
-
 (in-package :scribble)
 
 (defparameter $columns-per-tab 8)

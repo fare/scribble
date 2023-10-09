@@ -1,5 +1,3 @@
-#+xcvb (module ())
-
 (cl:defpackage #:scribble
   (:use #:common-lisp #:meta :fare-utils :uiop :fare-quasiquote :named-readtables)
   #+(or clisp sbcl ccl)

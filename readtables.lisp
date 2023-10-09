@@ -1,7 +1,5 @@
 ;;; -*- Mode: Lisp ; Base: 10 ; Syntax: ANSI-Common-Lisp -*-
 ;;; See README.
-#+xcvb (module (:depends-on ("racket" "skribe")))
-
 (in-package :scribble)
 
 (eval-now

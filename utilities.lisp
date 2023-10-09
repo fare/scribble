@@ -1,6 +1,4 @@
 ;; -*- Mode: Lisp ; Base: 10 ; Syntax: ANSI-Common-Lisp -*-
-#+xcvb (module (:depends-on ("package")))
-
 (in-package :scribble)
 
 (eval-now

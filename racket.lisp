@@ -4,8 +4,6 @@
 ;; See Racket documentation: http://docs.racket-lang.org/scribble/reader.html
 ;; And racket source code: pkgs/at-exp-lib/scribble/reader.rkt
 
-#+xcvb (module (:depends-on ("package")))
-
 (in-package :scribble)
 
 (eval-now
@@ -15,8 +13,8 @@
   ;; Try to enforce proper tail calls to avoid stack overflow
   (declare (optimize (speed 3)
                      (debug 1) ;; clozure: any debug not 3 should do
-                     #+sbcl (sb-c::insert-debug-catch 0))))
-  (with-nesting ()
+                     #+sbcl (sb-c::insert-debug-catch 0)))
+  (nest
     (with-input (input))
     (let* ((o (make-string-output-stream)) ; buffered output of "current stuff"
            (i (make-instance 'buffered-input :stream input))

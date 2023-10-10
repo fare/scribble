@@ -8,6 +8,7 @@ and the other is a port to CL of Bigloo's Skribe syntax."
   :author "Francois-Rene Rideau"
   :license "MIT"
   :depends-on ("meta"
+               "ptc"
                (:version "fare-utils" "1.0.0.5")
                "fare-memoization"
                (:version "fare-quasiquote-readtable" "0.9.6"))

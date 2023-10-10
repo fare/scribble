@@ -1,7 +1,0 @@
-(module
- (:fullname "scribble"
-  :build-depends-on
-  ("meta" "fare-utils" "fare-quasiquote")
-  :depends-on
-  ("package" "utilities" "stream-line-column" "skribe" "racket" "readtables")
-  :supersedes-asdf ("scribble")))

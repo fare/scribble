@@ -10,11 +10,8 @@
 
 ;; Parse an @ expression.
 (defun parse-at-syntax (input)
-  ;; Try to enforce proper tail calls to avoid stack overflow
-  (declare (optimize (speed 3)
-                     (debug 1) ;; clozure: any debug not 3 should do
-                     #+sbcl (sb-c::insert-debug-catch 0)))
   (nest
+    (with-proper-tail-calls ()) ;; Try to enforce proper tail calls to avoid stack overflow
     (with-input (input))
     (let* ((o (make-string-output-stream)) ; buffered output of "current stuff"
            (i (make-instance 'buffered-input :stream input))

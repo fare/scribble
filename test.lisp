@@ -12,16 +12,16 @@
                `(is (equal (multiple-value-list
                             (combine-column-modifiers ,@x ,@y))
                            ',z)))
-             (scm (x a b c)
+             (scm (x a b)
                `(is (equal (multiple-value-list
                             (string-column-modifier ,(format nil x #\tab)))
-                           '(,a ,b ,c)))))
-    (scm "abcde" 5 nil nil)
-    (scm "foo~%abcde" nil 5 3)
-    (scm "foo bar~%abcde" nil 5 7)
-    (scm "abcd~cfgh" 4 3 nil)
-    (scm "foo bar~%abcde~cfgh" nil 11 7)
-    (scm "~%abcde~cfgh" nil 11 0)
+                           '(,a ,b)))))
+    (scm "abcde" 5 nil)
+    (scm "foo~%abcde" nil 5)
+    (scm "foo bar~%abcde" nil 5)
+    (scm "abcd~cfgh" 4 3)
+    (scm "foo bar~%abcde~cfgh" nil 11)
+    (scm "~%abcde~cfgh" nil 11)
     (ccm (15 nil) (nil 23) (nil 23))
     (ccm (nil 15) (nil 23) (nil 23))
     (ccm (5 15) (nil 23) (nil 23))
@@ -32,9 +32,22 @@
     (ccm (15 nil) (23 42) (38 42))
     (ccm (5 15) (23 42) (5 82))))
 
-(defparameter *external-format*
-  #-ccl :default
-  #+ccl (ccl:make-external-format :character-encoding :utf-8))
+(defvar *lines-with-length*
+  (with-output (o nil)
+    (loop :for i :from 1 :to 500
+          :for is := (princ-to-string i) :do
+            (format o "~a~a~%" is (make-string (- i (length is)) :initial-element #\_)))))
+
+(deftest test-read-stream-to-pos ()
+  (is (with-input-from-string (s (make-string 200 :initial-element #\_)) (file-position s 128) (stream-line-column-harder s)) 128)
+  (loop :for (start end) :in
+        '((666 1729)
+          (0 1)
+          (0 40)
+          (5 400)) :do
+     (is (length (with-input-from-string (s *lines-with-length*)
+                   (file-position s start) (read-stream-to-pos s end)))
+         (- end start))))
 
 (deftest test-file-position ()
   (with-temporary-file (:stream s :pathname p :direction :output)
@@ -43,7 +56,7 @@ Faré λ 自由 foo
 æéïôù
 " s)
     :close-stream
-  (with-open-file (s p :direction :input :external-format *external-format*)
+  (with-open-file (s p :direction :input :external-format *utf-8-external-format*)
     (is (file-length s) 42)
     (let ((cpos
            (loop :for p = (file-position s)
@@ -55,8 +68,9 @@ Faré λ 自由 foo
              :while c
              :count (babel:string-size-in-octets (string c)) :into expectedp :do
              (is p expectedp)
-             :collect (list c p st col))))
-      (loop :for (c p st col) :in cpos :do
+             :collect (list p c col st))))
+      (loop :for (p c col st) :in cpos :do
+        ;;(format t "~s ~s ~s ~s~%" p c col st)
         (file-position s p)
         (is (eql (file-position s) p))
         (is (eql (read-char s) c))
@@ -274,7 +288,11 @@ Faré λ 自由 foo
 |#
      "@foo{
         @|| bar @||
-        @|| baz}" (foo " bar " *lf* " baz")))))
+        @|| baz}" (foo " bar " *lf* " baz")
+     "@a{@b{}}" (a (b))
+     ;; From https://github.com/fare/scribble/issues/1 -- this causes stack overflow(!)
+     ;;"#| Filler text long enough that the inner curly bracket is on column 128 of this one-line string.....................|# @a{}" (a)
+  ))))
 
 (defun p (x)
   (let ((*readtable* (find-readtable :scribble))

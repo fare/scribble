@@ -247,7 +247,7 @@ to accomodate the specificities of your markup language backend.
 ## Example use
 Example use to enable the syntax at the REPL:
 ```Lisp
-(load "scribble")
+(asdf:load-system "scribble")
 (use-package :scribble)
 (enable-scribble-syntax)
 '[foo ,[:emph bar] ,[:(baz :size 1) quux ,(tata toto [\:titi])] tutu]

@@ -290,8 +290,9 @@ Faré λ 自由 foo
         @|| bar @||
         @|| baz}" (foo " bar " *lf* " baz")
      "@a{@b{}}" (a (b))
+     "@a{}" (a)
      ;; From https://github.com/fare/scribble/issues/1 -- this causes stack overflow(!)
-     ;;"#| Filler text long enough that the inner curly bracket is on column 128 of this one-line string.....................|# @a{}" (a)
+     "#| Filler text long enough that the inner curly bracket is on column 128 of this one-line string.....................|# @a{}" (a) ;; Regression test against stack overflow on { on column 128 or more
   ))))
 
 (defun p (x)

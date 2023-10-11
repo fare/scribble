@@ -81,27 +81,28 @@ or we reach EOF."
   "Read the contents of a file stream from current position to endpos excluded"
   (declare (optimize (speed 1) (safety 3) (debug 3)))
   (loop :with startpos = (file-position stream)
-    :with maxchar = (- endpos startpos) ;; next attempt will be that much
-    :with buffer = (make-string maxchar :initial-element #\_) ; each char takes at least one byte
-    :with index = 0
-    :until (zerop maxchar) :do ;; dichotomy
-    (let* ((x (ceiling maxchar 2)) ;; divide maxchar by two rounding up
-           (i (read-sequence buffer stream :start index :end (+ index x)))) ;; read x characters more
-      (let ((p (file-position stream)))
-        (cond
-          ((<= p endpos)
-           ;; We haven't reached the destination yet, read more
-           (setf maxchar (min (- maxchar (- i index))
-                              (- endpos p)
-                              ;; We reached either our desired position or EOF, so go to exit:
-                              (if (= i index) 0 most-positive-double-float))
-                 index i
-                 startpos p))
-          ;; We overshot it, try to read one fewer characters
-          (t
-           (file-position stream startpos)
-           (setf maxchar (1- x))))))
-    :finally (return (subseq buffer 0 index))))
+    :with curpos = startpos
+    :with startchar = 0
+    :with endchar = (- endpos startpos) ;; each char takes at least one position
+    :with buffer = (make-string endchar :initial-element #\_)
+    :until (= startchar endchar) :do ;; dichotomy
+    (loop :with curchar = endchar
+          :for i = (read-sequence buffer stream :start startchar :end curchar)
+          :for p = (file-position stream) :do
+          (when (<= p endpos)
+            (setf startchar curchar curpos p)
+            (when (= p endpos)
+              (setf endchar curchar))
+            (return))
+          ;; (> p endpos)
+          (file-position stream curpos)
+          (setf endchar curchar
+                curchar (ash (+ startchar curchar) -1))
+          (when (= startchar curchar)
+            (setf endchar curchar)
+            (return)))
+    :finally
+       (return (subseq buffer 0 endchar))))
 
 (defun stream-line-column-harder (stream)
   "Extract the column we are at from the stream.
@@ -133,4 +134,5 @@ until we reach a beginning of line or of the who file.
                      (multiple-value-setq (unaligned aligned)
                        (combine-column-modifiers nil 0 unaligned aligned)))
                    (assert (null unaligned))
+                   (file-position stream orig-pos)
                    (return aligned)))))
